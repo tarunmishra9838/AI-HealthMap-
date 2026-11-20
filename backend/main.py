@@ -1,3 +1,12 @@
+from weather_service import get_weather, get_city_list, resolve_city_coordinates
+from ai_engine import (
+    get_analytics_summary,
+    get_alerts_list,
+    update_alert_lifecycle,
+    get_risk_zones as get_ai_risk_zones,
+    get_disease_trends_series,
+    get_ai_outbreak_predictions,
+)
 from auth import router as auth_router
 from datetime import datetime, timezone
 from functools import lru_cache
@@ -26,6 +35,7 @@ app = FastAPI(
 )
 
 app.include_router(auth_router)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
@@ -80,29 +90,6 @@ def _census_key(row: dict) -> tuple[str, str, str]:
 
 def _now():
     return datetime.now(timezone.utc).isoformat()
-
-
-# -------------------- DEMO DATA --------------------
-alerts = [
-    {"id": 1, "disease": "Dengue", "location": "Lucknow", "score": 86, "level": "Critical", "reason": "Cases significantly above historical baseline", "status": "New", "created_at": "2026-10-07T09:00:00", "data_status": "DEMO"},
-    {"id": 2, "disease": "Influenza", "location": "Kanpur", "score": 72, "level": "High", "reason": "Rapid increase detected in recent reports", "status": "Investigating", "created_at": "2026-10-07T08:30:00", "data_status": "DEMO"},
-    {"id": 3, "disease": "Malaria", "location": "Varanasi", "score": 61, "level": "High", "reason": "Unusual activity across nearby locations", "status": "Acknowledged", "created_at": "2026-10-07T08:00:00", "data_status": "DEMO"},
-    {"id": 4, "disease": "Dengue", "location": "Prayagraj", "score": 58, "level": "Medium", "reason": "Recent activity is above expected weekly range", "status": "New", "created_at": "2026-10-07T07:30:00", "data_status": "DEMO"},
-]
-risk_zones = [
-    {"id": 1, "location": "Lucknow", "latitude": 26.8467, "longitude": 80.9462, "risk_score": 86, "risk_level": "Critical", "disease": "Dengue", "data_status": "DEMO"},
-    {"id": 2, "location": "Kanpur", "latitude": 26.4499, "longitude": 80.3319, "risk_score": 72, "risk_level": "High", "disease": "Influenza", "data_status": "DEMO"},
-    {"id": 3, "location": "Varanasi", "latitude": 25.3176, "longitude": 82.9739, "risk_score": 61, "risk_level": "High", "disease": "Malaria", "data_status": "DEMO"},
-    {"id": 4, "location": "Prayagraj", "latitude": 25.4358, "longitude": 81.8463, "risk_score": 58, "risk_level": "Medium", "disease": "Dengue", "data_status": "DEMO"},
-]
-trend_data = [
-    {"week": "W1", "cases": 42}, {"week": "W2", "cases": 48},
-    {"week": "W3", "cases": 45}, {"week": "W4", "cases": 58},
-    {"week": "W5", "cases": 55}, {"week": "W6", "cases": 67},
-    {"week": "W7", "cases": 64}, {"week": "W8", "cases": 74},
-    {"week": "W9", "cases": 69}, {"week": "W10", "cases": 82},
-    {"week": "W11", "cases": 78}, {"week": "W12", "cases": 88},
-]
 
 
 class AlertStatusUpdate(BaseModel):
@@ -293,71 +280,98 @@ def census_villages(state_code: str, district_code: str, subdistrict_code: str):
             "count": len(rows), "data": rows}
 
 
-# -------------------- ANALYTICS / MAP (DEMO DATA) --------------------
-@app.get("/api/analytics/summary")
+# -------------------- ANALYTICS & AI OUTBREAK INTELLIGENCE --------------------
+@app.get("/api/analytics/summary", tags=["Analytics"])
 def analytics_summary():
-    return {"data_status": "DEMO", "total_cases": 12846,
-            "active_alerts": sum(1 for x in alerts if x["status"] != "Resolved"),
-            "high_risk_areas": sum(1 for x in risk_zones if x["risk_score"] >= 60),
-            "risk_score": 64, "case_change": "+8.4%", "alert_change": "+3",
-            "risk_area_change": "+2", "risk_level": "Medium"}
+    """Live overall analytics summary derived from real epidemiological surveillance data."""
+    return get_analytics_summary()
 
 
-@app.get("/api/analytics/trends")
+@app.get("/api/analytics/trends", tags=["Analytics"])
 def disease_trends():
-    return {"data_status": "DEMO", "period": "12 weeks", "change": "+14.8%",
-            "status": "Elevated activity", "data": trend_data}
+    """Aggregated 12-week verified case trend series."""
+    return get_disease_trends_series()
 
 
-@app.get("/api/analytics/anomalies")
+@app.get("/api/analytics/anomalies", tags=["Analytics"])
 def analytics_anomalies():
-    return {"data_status": "DEMO", "signals": [
-        {"id": 1, "location": "Lucknow", "disease": "Dengue", "risk_score": 86,
-         "severity": "Critical", "finding": "Activity is significantly above the historical baseline.",
-         "explanation": "Prototype signal only; requires validated surveillance data."},
-        {"id": 2, "location": "Kanpur", "disease": "Influenza", "risk_score": 72,
-         "severity": "High", "finding": "Rapid increase detected in recent reports.",
-         "explanation": "Prototype signal only; requires validated surveillance data."},
-    ]}
+    """Statistical Z-Score anomalies detected across regional surveillance centers."""
+    predictions = get_ai_outbreak_predictions()
+    anomalies = [
+        {
+            "id": item["numeric_id"],
+            "location": item["city"],
+            "disease": item["disease"],
+            "risk_score": item["risk_score"],
+            "outbreak_risk": f"{item['risk_score']}%",
+            "outbreak_probability": f"{item['outbreak_probability_pct']}%",
+            "caseload_share": f"{item['caseload_share_pct']}%",
+            "severity": item["risk_level"],
+            "z_score": item["z_score"],
+            "growth_rate": f"+{item['growth_rate_pct']}%",
+            "finding": f"Significant statistical surge (+{item['growth_rate_pct']}%, +{item['z_score']}σ deviation). District accounts for {item['caseload_share_pct']}% regional burden.",
+            "explanation": item["ai_explanation"],
+        }
+        for item in predictions if item["z_score"] >= 1.5 or item["risk_score"] >= 60
+    ]
+    return {"data_status": "LIVE_SURVEILLANCE_AI", "count": len(anomalies), "signals": anomalies}
 
 
-@app.get("/api/map/risk-zones")
+@app.get("/api/map/risk-zones", tags=["Map"])
 def get_risk_zones():
-    return {"count": len(risk_zones), "data_status": "DEMO",
-            "message": "Risk values are prototype/demo values, not real disease surveillance data.",
-            "zones": risk_zones}
+    """Geographical risk markers computed from verified surveillance and climate indices."""
+    zones = get_ai_risk_zones()
+    return {"count": len(zones), "data_status": "LIVE_SURVEILLANCE_AI", "zones": zones}
 
 
-# -------------------- ALERTS (IN-MEMORY DEMO) --------------------
-@app.get("/api/alerts")
+# -------------------- AI OUTBREAK PREDICTION ENGINE --------------------
+@app.get("/api/predictions/outbreaks", tags=["AI Engine"])
+def predict_outbreaks():
+    """
+    AI/ML Outbreak Prediction Endpoint.
+    Analyzes multi-week epidemiological surveillance data, calculates Z-Scores,
+    growth velocities, and baseline deviations to forecast outbreak hotspots and projected cases.
+    """
+    predictions = get_ai_outbreak_predictions()
+    return {
+        "data_status": "LIVE_SURVEILLANCE_AI",
+        "model": "AI-HealthMap-ZScore-Anomaly-v2.1",
+        "evaluated_locations": len(predictions),
+        "high_probability_outbreaks": sum(1 for p in predictions if p["outbreak_probability_pct"] >= 60),
+        "predictions": predictions,
+    }
+
+
+# -------------------- ALERTS (AI SURVEILLANCE GENERATED) --------------------
+@app.get("/api/alerts", tags=["Alerts"])
 def get_alerts():
-    return {"count": len(alerts), "data_status": "DEMO", "alerts": alerts}
+    """Live public-health alerts generated dynamically by the AI outbreak detection engine."""
+    alerts = get_alerts_list()
+    return {"count": len(alerts), "data_status": "LIVE_SURVEILLANCE_AI", "alerts": alerts}
 
 
-@app.get("/api/alerts/{alert_id}")
+@app.get("/api/alerts/{alert_id}", tags=["Alerts"])
 def get_alert(alert_id: int):
-    for alert in alerts:
+    for alert in get_alerts_list():
         if alert["id"] == alert_id:
             return alert
     raise HTTPException(status_code=404, detail="Alert not found")
 
 
-@app.patch("/api/alerts/{alert_id}/acknowledge")
+@app.patch("/api/alerts/{alert_id}/acknowledge", tags=["Alerts"])
 def acknowledge_alert(alert_id: int):
-    for alert in alerts:
-        if alert["id"] == alert_id:
-            alert["status"] = "Acknowledged"
-            return {"message": "Alert acknowledged successfully", "alert": alert}
-    raise HTTPException(status_code=404, detail="Alert not found")
+    updated = update_alert_lifecycle(alert_id, "acknowledge")
+    if updated is None:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    return {"message": "Alert acknowledged successfully", "alert": updated}
 
 
-@app.patch("/api/alerts/{alert_id}/resolve")
+@app.patch("/api/alerts/{alert_id}/resolve", tags=["Alerts"])
 def resolve_alert(alert_id: int):
-    for alert in alerts:
-        if alert["id"] == alert_id:
-            alert["status"] = "Resolved"
-            return {"message": "Alert resolved successfully", "alert": alert}
-    raise HTTPException(status_code=404, detail="Alert not found")
+    updated = update_alert_lifecycle(alert_id, "resolve")
+    if updated is None:
+        raise HTTPException(status_code=404, detail="Alert not found")
+    return {"message": "Alert resolved successfully", "alert": updated}
 
 
 # -------------------- DATA SOURCES / SYSTEM STATUS --------------------
@@ -390,4 +404,43 @@ def system_status():
             "last_updated": _now()}
 
 
-# Run in backend terminal: uvicorn main:app --reload
+# -------------------- WEATHER & OUTBREAK RISK APIs --------------------
+@app.get("/api/weather/cities", tags=["Weather"])
+def weather_cities():
+    """Return list of predefined Indian surveillance cities for weather selection."""
+    cities = get_city_list()
+    return {"count": len(cities), "cities": cities}
+
+
+@app.get("/api/weather", tags=["Weather"])
+def weather_api(
+    city: Optional[str] = Query(default=None, description="City name (e.g. Lucknow, Kanpur, Varanasi)"),
+    latitude: Optional[float] = Query(default=None, description="Latitude coordinate"),
+    longitude: Optional[float] = Query(default=None, description="Longitude coordinate"),
+):
+    """
+    Fetch real-time weather, 7-day forecast, and environmental outbreak risk analysis.
+    Supports querying by city name or direct latitude/longitude.
+    """
+    city_name = None
+    if city:
+        resolved = resolve_city_coordinates(city)
+        if resolved:
+            latitude = resolved["latitude"]
+            longitude = resolved["longitude"]
+            city_name = resolved["city"]
+        else:
+            city_name = city.strip().title()
+
+    if latitude is None or longitude is None:
+        # Default capital reference (Lucknow, UP)
+        latitude = 26.8467
+        longitude = 80.9462
+        if not city_name:
+            city_name = "Lucknow"
+
+    try:
+        return get_weather(latitude, longitude, city_name=city_name)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc))
+

@@ -109,15 +109,69 @@ def _load_json(filename, default):
 # REGION FUNCTIONS
 # ============================================================
 
+# Capital reference coordinates for Indian states and UTs.
+# These are capital/reference points, not state boundary centroids.
+
+REGION_COORDINATES = {
+    "AP": (16.5062, 80.6480),  # Andhra Pradesh - Amaravati
+    "AR": (27.0844, 93.6053),  # Arunachal Pradesh - Itanagar
+    "AS": (26.1445, 91.7362),  # Assam - Dispur
+    "BR": (25.5941, 85.1376),  # Bihar - Patna
+    "CG": (21.2514, 81.6296),  # Chhattisgarh - Raipur
+    "GA": (15.4909, 73.8278),  # Goa - Panaji
+    "GJ": (23.2156, 72.6369),  # Gujarat - Gandhinagar
+    "HR": (30.7333, 76.7794),  # Haryana - Chandigarh
+    "HP": (31.1048, 77.1734),  # Himachal Pradesh - Shimla
+    "JH": (23.3441, 85.3096),  # Jharkhand - Ranchi
+    "KA": (12.9716, 77.5946),  # Karnataka - Bengaluru
+    "KL": (8.5241, 76.9366),   # Kerala - Thiruvananthapuram
+    "MP": (23.2599, 77.4126),  # Madhya Pradesh - Bhopal
+    "MH": (19.0760, 72.8777),  # Maharashtra - Mumbai
+    "MN": (24.8170, 93.9368),  # Manipur - Imphal
+    "ML": (25.5788, 91.8933),  # Meghalaya - Shillong
+    "MZ": (23.7271, 92.7176),  # Mizoram - Aizawl
+    "NL": (25.6751, 94.1086),  # Nagaland - Kohima
+    "OD": (20.2961, 85.8245),  # Odisha - Bhubaneswar
+    "PB": (30.7333, 76.7794),  # Punjab - Chandigarh
+    "RJ": (26.9124, 75.7873),  # Rajasthan - Jaipur
+    "SK": (27.3314, 88.6138),  # Sikkim - Gangtok
+    "TN": (13.0827, 80.2707),  # Tamil Nadu - Chennai
+    "TS": (17.3850, 78.4867),  # Telangana - Hyderabad
+    "TR": (23.8315, 91.2868),  # Tripura - Agartala
+    "UP": (26.8467, 80.9462),  # Uttar Pradesh - Lucknow
+    "UK": (30.3165, 78.0322),  # Uttarakhand - Dehradun
+    "WB": (22.5726, 88.3639),  # West Bengal - Kolkata
+
+    "AN": (11.6234, 92.7265),  # Andaman & Nicobar Islands - Port Blair
+    "CH": (30.7333, 76.7794),  # Chandigarh
+    "DN": (20.3974, 72.8328),  # Dadra & Nagar Haveli and Daman & Diu - Daman
+    "DL": (28.6139, 77.2090),  # Delhi
+    "JK": (34.0837, 74.7973),  # Jammu & Kashmir - Srinagar reference
+    "LA": (34.1526, 77.5771),  # Ladakh - Leh
+    "LD": (10.5667, 72.6417),  # Lakshadweep - Kavaratti
+    "PY": (11.9416, 79.8083),  # Puducherry
+}
+
+
 def get_all_regions():
-    return INDIA_REGIONS
+    return [
+        {
+            **region,
+            "latitude": REGION_COORDINATES.get(region["id"], (None, None))[0],
+            "longitude": REGION_COORDINATES.get(region["id"], (None, None))[1],
+            "coordinate_type": "capital_reference",
+        }
+        for region in INDIA_REGIONS
+    ]
 
 
-def get_region_by_id(region_id):
-    for region in INDIA_REGIONS:
-        if region["id"] == region_id:
+def get_region_by_id(region_id: str):
+    target = region_id.strip().upper()
+    for region in get_all_regions():
+        if region["id"] == target:
             return region
     return None
+
 
 
 # ============================================================

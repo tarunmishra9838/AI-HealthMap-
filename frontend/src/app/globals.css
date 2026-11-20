@@ -1,26 +1,118 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-sidebar: #10243a;
+  --color-sidebar-hover: #193554;
+  --color-sidebar-active: #1e3f64;
+  --color-primary: #2563eb;
+  --color-accent: #0d9488;
+  --color-bg-main: #f5f8fc;
+  --color-card: #ffffff;
+  --color-heading: #172b4d;
+  --color-body: #475569;
+  --color-border: #e2e8f0;
+  --color-critical: #dc2626;
+  --color-warning: #d97706;
+  --color-success: #059669;
+
+  --background: #f5f8fc;
+  --foreground: #172b4d;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background-color: #f5f8fc;
+  color: #172b4d;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #f5f8fc;
+  color: #475569;
+  min-height: 100vh;
+}
+
+/* Headings color contract */
+h1, h2, h3, h4, h5, h6 {
+  color: #172b4d;
+}
+
+/* Clean Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Numeric & Monospace Polish */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Radar & Pulse Animations for Surveillance Portal */
+@keyframes pulse-ring {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+.radar-ping {
+  animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+}
+
+/* Leaflet Custom Popup Polish */
+.leaflet-popup-content-wrapper {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-radius: 8px !important;
+  box-shadow: 0 12px 30px -10px rgba(15, 23, 42, 0.25), 0 4px 6px -4px rgba(15, 23, 42, 0.1) !important;
+  border: 1px solid #cbd5e1 !important;
+  padding: 0 !important;
+}
+
+.leaflet-popup-content {
+  margin: 12px 14px !important;
+  line-height: 1.4 !important;
+}
+
+.leaflet-popup-tip {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: none !important;
+}
+
+.leaflet-container a.leaflet-popup-close-button {
+  top: 6px !important;
+  right: 6px !important;
+  color: #64748b !important;
+  padding: 4px !important;
+}
+.leaflet-container a.leaflet-popup-close-button:hover {
+  color: #0f172a !important;
 }

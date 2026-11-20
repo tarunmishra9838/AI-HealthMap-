@@ -42,14 +42,14 @@ const alerts = [
     reason: "Cases significantly above historical baseline",
   },
   {
-    disease: "Influenza",
+    disease: "Dengue",
     location: "Kanpur",
     score: 72,
     level: "High",
     reason: "Rapid increase detected in recent reports",
   },
   {
-    disease: "Malaria",
+    disease: "Dengue",
     location: "Varanasi",
     score: 61,
     level: "High",
